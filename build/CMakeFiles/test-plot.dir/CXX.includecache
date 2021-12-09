@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/xiaohan/stage6/wey1data/plot-cpp/src/main.cpp
+opencv2/highgui/highgui.hpp
+-
+opencv2/calib3d.hpp
+-
+opencv2/imgproc.hpp
+-
+iostream
+-
+vector
+-
+string
+-
+deque
+-
+

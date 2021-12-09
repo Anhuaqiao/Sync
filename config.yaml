@@ -1,0 +1,55 @@
+%YAML:1.0
+---
+img-folder: /home/xiaohan/stage6/wey1data/camera_data/0
+front-radar-folder: /home/xiaohan/stage6/wey1data/radar_data/data_front
+lf-radar-folder: /home/xiaohan/stage6/wey1data/radar_data/data_lf
+rf-radar-folder: /home/xiaohan/stage6/wey1data/radar_data/data_rf
+imageSize: [ 1920, 1200 ]
+rvec-front: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 1.4836460324023821e+00, -3.7036077218133831e-02,
+       5.9895973152910266e-02 ]
+tvec-front: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ -9.7594351432367624e-02, 1.6374086484437917e+00,
+       1.5281568834104853e+00 ]
+rvec-lf: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ -3.4532247583786990e-01, -2.1756496011100608e+00,
+       -2.0354750708709286e+00 ]
+tvec-lf: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ -6.8336369830562405e-01, -2.2678965737421794e-01,
+       1.0428397365693263e+00 ]
+rvec-rf: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 1.4852213315724094e+00, -1.8966112689377934e-01,
+       2.7361672972366047e-01 ]
+tvec-rf: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 9.2198764694670299e-01, 1.6216174900095703e+00,
+       2.5295367682078309e+00 ]
+cameraMatrix: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1.0148871851591761e+03, 0., 9.3037923280372581e+02, 0.,
+       1.0196356956271103e+03, 4.8794195473837169e+02, 0., 0., 1. ]
+distCoeff: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   data: [ -3.1066151822322162e-02, 3.4324349626048335e-02,
+       -6.2279666374504286e-02, 3.4648884538340426e-02, 0. ]
