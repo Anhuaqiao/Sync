@@ -11,7 +11,7 @@ using namespace cv;
 
 
 void get_camera_intrinsic(string path, Size& imageSize, Mat& cameraMatrix, Mat& distCoeff,  
-                            string& img_folderpath, string& front_folderpath, string& left_folderpath, string& right_folderpath,
+                            string& img_folderpath, string& front_folderpath, string& lf_folderpath, string& rf_folderpath,
                             Mat& rvecFront, Mat& tvecFront, Mat& rvecLF, Mat& tvecLF, Mat& rvecRF, Mat& tvecRF){
 
     FileStorage fs(path, FileStorage::READ);
@@ -20,8 +20,8 @@ void get_camera_intrinsic(string path, Size& imageSize, Mat& cameraMatrix, Mat& 
     fs["distCoeff"] >> distCoeff;
     fs["img-folder"] >> img_folderpath;
     fs["front-radar-folder"] >> front_folderpath;
-    fs["lf-radar-folder"] >> left_folderpath;
-    fs["rf-radar-folder"] >> right_folderpath;
+    fs["lf-radar-folder"] >> lf_folderpath;
+    fs["rf-radar-folder"] >> rf_folderpath;
     fs["rvec-front"] >> rvecFront;
     fs["tvec-front"] >> tvecFront;
     fs["rvec-lf"] >> rvecLF;
@@ -34,8 +34,8 @@ void get_camera_intrinsic(string path, Size& imageSize, Mat& cameraMatrix, Mat& 
     cout << "distCoeff: " << distCoeff<< endl;
     cout << "img-folder: " << img_folderpath<< endl;
     cout << "front-radar-folder: " << front_folderpath<< endl;
-    cout << "lf-radar-folder: " << left_folderpath<< endl;
-    cout << "rf-radar-folder: " << right_folderpath<< endl;
+    cout << "lf-radar-folder: " << lf_folderpath<< endl;
+    cout << "rf-radar-folder: " << rf_folderpath<< endl;
     cout << "rvec-front: " << rvecFront<< endl;
     cout << "tvec-front: " << tvecFront<< endl;
     cout << "rvec-lf: " << rvecLF<< endl;
@@ -51,15 +51,27 @@ void get_numerical_img(vector<cv::String> filenames, deque<double>& filenames_){
             string substring = a.substr(pos-17, 17);
             double time_img = stod(substring);
             filenames_.push_back(time_img);
+
     }
 }
 
 void get_numerical_json(vector<cv::String> filenames, deque<double>& filenames_){
-        for(auto &a:filenames){
+        for(auto &a:filenames){            
             int pos = a.find(".json");
-            string substring = a.substr(pos-19, 13);
-            double time_json = stod(substring)/1000.0;   
-            filenames_.push_back(time_json);
+            double time_json;
+            if(a.find("_front")!=std::string::npos){
+                string substring = a.substr(pos-19, 13);
+                time_json = stod(substring)/1000.0;   
+                filenames_.push_back(time_json);
+            }else if(a.find("_lf")!=std::string::npos){
+                string substring = a.substr(pos-16, 13);
+                time_json = stod(substring)/1000.0;   
+                filenames_.push_back(time_json);
+            }else if(a.find("_rf")!=std::string::npos){
+                string substring = a.substr(pos-16, 13);
+                time_json = stod(substring)/1000.0;   
+                filenames_.push_back(time_json);
+            }
     }
 }
 
@@ -85,7 +97,7 @@ void getJson(string path_json, vector<Point3f> &locph, vector<Point3f> &locp0){
         }
 }
 
-void plot_results(Mat cameraMatrix, Mat distCoeff, Mat img, string target, string outpath, vector<Point3f> &locph, vector<Point3f> &locp0, Mat tVec, Mat rVec, int color){
+void plot_results(Mat cameraMatrix, Mat distCoeff, Mat& img, vector<Point3f> &locph, vector<Point3f> &locp0, Mat rVec, Mat tVec, int color){
     vector<Point2f> check_front_image_ptsh;
     vector<Point2f> check_front_image_pts0;    
     // project on to the pixel coordinate
@@ -95,14 +107,14 @@ void plot_results(Mat cameraMatrix, Mat distCoeff, Mat img, string target, strin
         cout << check_front_image_pts0[i].x << " " <<check_front_image_pts0[i].y << "\n";
         cv::line(img, check_front_image_pts0[i],check_front_image_ptsh[i],Scalar(0,color,255),1,CV_AA);
     }
-    std::ostringstream name;
-    name << outpath << "/" << target << ".jpg";
-    imwrite(name.str(), img);
-
 }
 
 
-int find_closest( string path_config, string img_folderpath, string radar_folderpath, Mat cameraMatrix, Mat distCoeff, Mat rvec, Mat tvec, string outpath, int color){
+int find_closest( string path_config, Mat cameraMatrix, Mat distCoeff, string img_folderpath, 
+                    string front_folderpath, Mat rvecFront, Mat tvecFront, 
+                    string lf_folderpath, Mat rvecLF, Mat tvecLF, 
+                    string rf_folderpath, Mat rvecRF, Mat tvecRF, 
+                    string outpath, int colorFront, int colorLF, int colorRF){
 
     vector<cv::String> img_filenames;
     cv::glob(img_folderpath, img_filenames);
@@ -111,47 +123,126 @@ int find_closest( string path_config, string img_folderpath, string radar_folder
     vec2deque(img_filenames, img_filenames_);
     get_numerical_img(img_filenames, img_id);
 
-    vector<cv::String> radar_filenames;
-    cv::glob(radar_folderpath, radar_filenames);
-    deque<cv::String> radar_filenames_;
-    deque<double> radar_id;
-    vec2deque(radar_filenames, radar_filenames_);
-    get_numerical_json(radar_filenames, radar_id);
+    vector<cv::String> front_filenames;
+    cv::glob(front_folderpath, front_filenames);
+    deque<cv::String> front_filenames_;
+    deque<double> front_id;
+    vec2deque(front_filenames, front_filenames_);
+    get_numerical_json(front_filenames, front_id);
+
+    vector<cv::String> lf_filenames;
+    cv::glob(lf_folderpath, lf_filenames);
+    deque<cv::String> lf_filenames_;
+    deque<double> lf_id;
+    vec2deque(lf_filenames, lf_filenames_);
+    get_numerical_json(lf_filenames, lf_id);
+
+    vector<cv::String> rf_filenames;
+    cv::glob(rf_folderpath, rf_filenames);
+    deque<cv::String> rf_filenames_;
+    deque<double> rf_id;
+    vec2deque(rf_filenames, rf_filenames_);
+    get_numerical_json(rf_filenames, rf_id);
 
     for( auto& target : img_id){
 
         cout.precision(6);
         cout << fixed << "img id: " << target << "\n";
-        while(!radar_id.empty()){
-            if(fabs(target - radar_id.front()) < 0.01){
+        while( !front_id.empty()&& !lf_id.empty() && !rf_id.empty() ){
+            if((fabs(target - front_id.front()) < 0.01) && (fabs(target - lf_id.front()) < 0.01) && (fabs(target - rf_id.front()) < 0.01)){
 
                 cout.precision(6);
                 cout << fixed << "plot img id: " << target << "\n";
                 cout.precision(3);
-                cout << fixed << "plot radar id: " << radar_id.front() << "\n";
+                cout << fixed << "plot front id: " << front_id.front() << "\n";
+                cout << fixed << "plot lf id: " << lf_id.front() << "\n";
+                cout << fixed << "plot rf id: " << rf_id.front() << "\n";
+
                 Mat img = imread( img_filenames_.front(), CV_LOAD_IMAGE_COLOR );
-                string json_path = radar_filenames_.front();
+                string json_path_front = front_filenames_.front();
+                string json_path_lf = lf_filenames_.front();
+                string json_path_rf = rf_filenames_.front();
 
-                vector<Point3f> locph;
-                vector<Point3f> locp0; 
-                getJson(json_path, locph, locp0);
 
-                plot_results(cameraMatrix, distCoeff, img, to_string(target), outpath, locph, locp0, tvec, rvec, color);
+                vector<Point3f> locph_front;
+                vector<Point3f> locp0_front;
+                getJson(json_path_front, locph_front, locp0_front);
+                vector<Point3f> locph_lf;
+                vector<Point3f> locp0_lf;
+                getJson(json_path_lf, locph_lf, locp0_lf);
+                vector<Point3f> locph_rf;
+                vector<Point3f> locp0_rf;
+                getJson(json_path_rf, locph_rf, locp0_rf);
+
+
+                if( !locph_front.empty() && !locph_lf.empty() && !locph_rf.empty()){
+                    plot_results(cameraMatrix, distCoeff, img, locph_front, locp0_front, rvecFront, tvecFront, colorFront);
+                    plot_results(cameraMatrix, distCoeff, img, locph_lf, locp0_lf, rvecLF, tvecLF, colorLF);
+                    plot_results(cameraMatrix, distCoeff, img, locph_rf, locp0_rf, rvecRF, tvecRF, colorRF);
+                }
+                
+                string str_target = to_string(target);
+                std::ostringstream name;
+                name << outpath << "/" << str_target << ".jpg";
+                imwrite(name.str(), img);
                 img_filenames_.pop_front();
                 break;
-            }else if(target - radar_id.front() > 0.01){
+            }else if((target - front_id.front() < -0.01) || (target - lf_id.front() < -0.01) || (target - rf_id.front() < -0.01)){
+                img_filenames_.pop_front();
+                break;
+            }else if((target - front_id.front() > 0.01) && (fabs(target - lf_id.front()) < 0.01) && (fabs(target - rf_id.front()) < 0.01)){
                 cout.precision(3);
-                cout << fixed << "poped radar id: " << radar_id.front() << "\n";
-                radar_filenames_.pop_front();
-                radar_id.pop_front();
-            }else{
-                img_filenames_.pop_front();
-                break;
+                cout << fixed << "poped front id: " << front_id.front() << "\n";
+                front_filenames_.pop_front();
+                front_id.pop_front();
+            }else if((fabs(target - front_id.front()) < 0.01) && (target - lf_id.front() > 0.01) && (fabs(target - rf_id.front()) < 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped lf id: " << lf_id.front() << "\n";
+                lf_filenames_.pop_front();
+                lf_id.pop_front();
+            }else if((fabs(target - front_id.front()) < 0.01) && (fabs(target - lf_id.front()) < 0.01) && (target - rf_id.front() > 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped rf id: " << rf_id.front() << "\n";
+                rf_filenames_.pop_front();
+                rf_id.pop_front();
+            }else if((target - front_id.front() > 0.01) && (target - lf_id.front() > 0.01) && (fabs(target - rf_id.front()) < 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped front id: " << front_id.front() << "\n";
+                front_filenames_.pop_front();
+                front_id.pop_front();
+                cout << fixed << "poped lf id: " << lf_id.front() << "\n";
+                lf_filenames_.pop_front();
+                lf_id.pop_front();
+            }else if((target - front_id.front() > 0.01) && (fabs(target - lf_id.front()) < 0.01) && (target - rf_id.front() > 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped front id: " << front_id.front() << "\n";
+                front_filenames_.pop_front();
+                front_id.pop_front();
+                cout << fixed << "poped rf id: " << rf_id.front() << "\n";
+                rf_filenames_.pop_front();
+                rf_id.pop_front();
+            }else if((fabs(target - front_id.front()) < 0.01)  && (target - lf_id.front() > 0.01)  && (target - rf_id.front() > 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped lf id: " << lf_id.front() << "\n";
+                lf_filenames_.pop_front();
+                lf_id.pop_front();
+                cout << fixed << "poped rf id: " << rf_id.front() << "\n";
+                rf_filenames_.pop_front();
+                rf_id.pop_front();
+            }else if((target - front_id.front() > 0.01)  && (target - lf_id.front() > 0.01)  && (target - rf_id.front() > 0.01)){
+                cout.precision(3);
+                cout << fixed << "poped front id: " << front_id.front() << "\n";
+                front_filenames_.pop_front();
+                front_id.pop_front();
+                cout << fixed << "poped lf id: " << lf_id.front() << "\n";
+                lf_filenames_.pop_front();
+                lf_id.pop_front();
+                cout << fixed << "poped rf id: " << rf_id.front() << "\n";
+                rf_filenames_.pop_front();
+                rf_id.pop_front();
             }
         }
     }
-
-
 };
 
 
@@ -160,8 +251,8 @@ int main(){
 
     string img_folderpath;    
     string front_folderpath;
-    string left_folderpath;
-    string right_folderpath;
+    string lf_folderpath;
+    string rf_folderpath;
     Mat rvecFront, tvecFront, rvecLF, tvecLF, rvecRF, tvecRF;
 
 
@@ -169,13 +260,18 @@ int main(){
     Mat cameraMatrix;
     Mat distCoeff;
     get_camera_intrinsic(path_config, imageSize, cameraMatrix, distCoeff, 
-                            img_folderpath, front_folderpath, left_folderpath, right_folderpath, 
+                            img_folderpath, front_folderpath, lf_folderpath, rf_folderpath, 
                             rvecFront, tvecFront, rvecLF, tvecLF, rvecRF, tvecRF);
 
     cout << img_folderpath << endl;
     string outpath = "../results";
     int colorFront = 255;
-    find_closest( path_config, img_folderpath, front_folderpath, cameraMatrix, distCoeff, rvecFront, tvecFront, outpath, colorFront);
-    find_closest( path_config, img_folderpath, front_folderpath, cameraMatrix, distCoeff, rvecFront, tvecFront, outpath, colorFront);
+    int colorLF = 155;
+    int colorRF = 0;
+    find_closest(path_config, cameraMatrix, distCoeff, img_folderpath, 
+                 front_folderpath, rvecFront, tvecFront, 
+                 lf_folderpath, rvecLF, tvecLF, 
+                 rf_folderpath, rvecRF, tvecRF, 
+                 outpath, colorFront, colorLF, colorRF);
     return 0;
 }
